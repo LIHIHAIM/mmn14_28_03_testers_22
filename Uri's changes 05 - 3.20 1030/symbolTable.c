@@ -154,14 +154,11 @@ boolean wasDefined(char *sym, int lineCnt)
 }
 
 /* is the symbol already in the symbol table */
-static boolean definedAs(char *sym, char *attrib)
-{
+static boolean definedAs(char *sym, char *attrib){
     int i;
     boolean wasFound = FALSE;
-    for (i = 0; i < symSize; i++)
-    {
-        if (strcmp(symTab[i].symbol, sym))
-        {
+    for (i = 0; i < symSize; i++){
+        if (strcmp(symTab[i].symbol, sym)){
             wasFound = TRUE;
             if (strcmp(symTab[i].attribute1, attrib) || strcmp(symTab[i].attribute2, attrib))
                 return TRUE;
@@ -172,15 +169,17 @@ static boolean definedAs(char *sym, char *attrib)
     return FALSE;
 }
 
-/* searching for a symbol name in the symbol table and returns the row of the symbol */
-symbolTable getFromSymTab(char *sym)
-{
+/* getFromSymTab(): searches for a matching symbol name in the symbol-table for a name
+ and returns the row of the symbol. If the symbol is not defined in the symbol-table 
+ a row will be returned with a symbol name is a NULL pointer.
+ parameters: sym - the symbol name to search for 
+ */
+symbolTable getFromSymTab(char *sym){
     int i = 0;
     symbolTable error;
     error.symbol = NULL;
 
-    while (i < symSize)
-    {
+    while (i < symSize){
         if (strcmp(symTab[i].symbol, sym))
             return symTab[i];
         i++;
@@ -188,29 +187,27 @@ symbolTable getFromSymTab(char *sym)
     return error;
 }
 
-boolean entryExist()
-{
+/* entryExist(): returns if there is an entry variable in the symbol-table */
+boolean entryExist(){
     int i;
-    for (i = 0; i < symSize; i++)
-    {
-        if (strcmp(symTab[i].attribute1, "entry") || strcmp(symTab[i].attribute2, "entry"))
+    for (i = 0; i < symSize; i++){
+        if (strcmp(symTab[i].attribute2, "entry"))
             return TRUE;
     }
     return FALSE;
 }
 
-boolean externalExist()
-{
+/* externalExist(): returns if there is an external variable in the symbol-table */
+boolean externalExist(){
     int i;
-    for (i = 0; i < symSize; i++)
-    {
-        if (strcmp(symTab[i].attribute1, "extern") || strcmp(symTab[i].attribute2, "extern"))
+    for (i = 0; i < symSize; i++){
+        if (strcmp(symTab[i].attribute1, "extern"))
             return TRUE;
     }
     return FALSE;
 }
 
-/* cleanSymTab(): */
+/* cleanSymTab(): frees the pointer to the symbol-table */
 void cleanSymTab(){
     free(symTab);
     return;
