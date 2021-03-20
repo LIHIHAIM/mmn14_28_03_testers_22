@@ -35,7 +35,7 @@ boolean compile(char *fileName){
      /* line variables */
      char line[LINE_LEN];             /* array for handling a line of assembly code */
      int *lInd = malloc(sizoef(int)); /* the Line-Index */
-     char *tempLine, *optLabel[1];
+     char *tempLine, *optLabel;
      /* label and compilation variables and falgs */
      statType type;
      boolean compSuc = TRUE, labelExist = FALSE, pushed = TRUE;
@@ -52,20 +52,21 @@ boolean compile(char *fileName){
      clean(FALSE); /* setting IC to 100 and DC to 0 */
      while (FOREVER){
           lineCnt++;
+          *lInd = 0;
           tempLine = readLine(fd, LINE_LEN); /* reading a line from the file */
           if (*tempLine == '\0') /* end of file */
                break;
           strcpy(line, tempLine);
           free(tempLine);
 
-          if (!(*optLabel = readWord(line, lInd))){
+          if (!(optLabel = readWord(line, lInd))){
                free(lInd);
                free(tempFileName);
                return ERROR;
           }
-          if(!strcmp(*optLabel, "\0") && isLabel(*optLabel)){
+          if(!strcmp(optLabel, "\0") && isLabel(optLabel)){
                labelExist = TRUE;
-               if(!isValidLabel(optLabel, lineCnt)) /* could not get a label */
+               if(!isValidLabel(optLabel, lineCnt, TRUE)) /* could not get a label */
                     compSuc = FALSE;
           }
 
@@ -79,23 +80,13 @@ boolean compile(char *fileName){
                case data:
                case string:
                     if (labelExist){
-                         if (isIlegalName(*optLabel, lineCnt) || wasDefined(optLabel, lineCnt)) /* if label was all ready defined */
-                              compSuc = FALSE;
-                         else if (command == data){
-                              if (!(pushed = addToSymTab(*optLabel, "data", lineCnt)))
-                                   return FALSE;
-                              if(pushed == ERROR){
-                                   clean(FALSE);
-                                   return ERROR;
-                              }
-                         }
-                         else if (command == string){
-                              if (!(pushed = addToSymTab(*optLabel, "string", lineCnt)))
-                                   return FALSE;
-                              if(pushed == ERROR){
-                                   clean(FALSE);
-                                   return ERROR;
-                              }
+                         if (isIlegalName(optLabel, lineCnt) || wasDefined(optLabel, lineCnt)) /* if label was all ready defined */
+                         compSuc = FALSE;
+                         if (!(pushed = addToSymTab(optLabel, "data", lineCnt)))
+                              return FALSE;
+                         if(pushed == ERROR){
+                              clean(FALSE);
+                              return ERROR;
                          }
                     }
                     if (!(pushed = pushData(line, lInd)))
@@ -107,8 +98,8 @@ boolean compile(char *fileName){
                     continue;
                case external:
                     if (labelExist){
-                         isIlegalName(*optLabel, lineCnt);
-                         wasDefined(*optLabel, lineCnt);
+                         isIlegalName(optLabel, lineCnt);
+                         wasDefined(optLabel, lineCnt);
                          printf("warnning [line %d]: a label before the directive \".extern\" is meaningless\n", lineCnt);
                     }
                     if (!(pushed = pushExtern(line, lInd)))
@@ -119,6 +110,11 @@ boolean compile(char *fileName){
                     }
                     continue;
                case entry:
+                    boolean check;
+                    if(!(check = checkEntry(line, lInd, lineCnt)))
+                         compSuc = FALSE;
+                    if(check == ERROR)
+                         return ERROR;
                     continue;
                default:
                     compSuc = FALSE;
@@ -126,7 +122,7 @@ boolean compile(char *fileName){
                }
           case order:
                if (labelExist){
-                    if (isIlegalName(*optLabel, lineCnt) || wasDefined(optLabel, lineCnt) || !(pushed = addToSymTab(*optLabel, "code", lineCnt)))
+                    if (isIlegalName(optLabel, lineCnt) || wasDefined(optLabel, lineCnt) || !(pushed = addToSymTab(optLabel, "code", lineCnt)))
                          compSuc = FALSE;
                     if(pushed == ERROR){
                          clean(FALSE);
@@ -144,10 +140,50 @@ boolean compile(char *fileName){
      }
      if (compSuc == FALSE)
           return FALSE;
+     encPlusIC();
      rewind(fd);
+     lineCnt = 0;
      while (FOREVER){
+          *lInd = 0;
           lineCnt++;
+          tempLine = readLine(fd, LINE_LEN); /* reading a line from the file */
+          if (*tempLine == '\0') /* end of file */
+               break;
+          strcpy(line, tempLine);
+          free(tempLine);
+
+          if (!(optLabel = readWord(line, lInd))){
+               free(lInd);
+               free(tempFileName);
+               return ERROR;
+          }
+          if(!strcmp(optLabel, "\0") && isLabel(optLabel))
+               labelExist = TRUE;
+          if(!(pushed = pushInstSecond(line, labelExist)))
+               return FALSE;
+          if(pushed == ERROR)
+               return ERROR;
+          switch ((type = getStatType(line))){ /* finding the statment type (instruction/ directive/ balnk line/ comment) */
+          case comment:
+          case blank:
+               continue;
+          default:
+               boolean added;
+               if(!labelExist)
+                    *lInd = 0;
+               if(!(added = pushEntry()))
+                    return FALSE;
+               if(added == ERROR)
+                    return ERROR;
+               if(isBlank(line, *lInd) || *lInd == strlen(line))
+                    continue;
+               if(!pushInstSecond(line, lInd)){
+                    compSuc = FALSE;
+                    return FALSE;
+               }
+          }         
      }
+     clean(FALSE);
      fclose(fd);
      free(tempFileName);
 }

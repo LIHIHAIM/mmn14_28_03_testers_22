@@ -34,33 +34,33 @@ boolean isLabel(char *string){
      return FALSE;
 }
 
-boolean isValidLabel(char **label, int lineCnt, boolean optLabel){
+boolean isValidLabel(char *label, int lineCnt, boolean optLabel){
      boolean valid = TRUE;
      int i = 0;
-     if(!optLabel && (*label)[strlen(*label)] != ':'){
+     if(!optLabel && label[strlen(label)] != ':'){
           printf("error [line %d]: after the end of an optional label must come a semicolon\n", lineCnt);
           valid = FALSE; /* labbel is not valid */
      }
-     if(!isAlpha((*label)[i])){
-          printf("error [line %d]: label \"%s\" must start with an alphabetic character\n", lineCnt, *label);
+     if(!isAlpha(label[i])){
+          printf("error [line %d]: label \"%s\" must start with an alphabetic character\n", lineCnt, label);
           valid = FALSE;
      }
-     if(strlen(*label) > LABEL_SIZE){
+     if(strlen(label) > LABEL_SIZE){
           printf("error [line %d]: the maximum label length is %d characters\n", lineCnt, LABEL_SIZE);
           valid = FALSE;
      }
-     for(i = 1; i < strlen(*label); i++){
-          if((*label)[i] == ':' && i != strlen(label)-1){
-               printf("error [line %d]: after end of label \"%s\" must be at least one space\n", lineCnt, *label);
+     for(i = 1; i < strlen(label); i++){
+          if(label[i] == ':' && i != strlen(label)-1){
+               printf("error [line %d]: after end of label \"%s\" must be at least one space\n", lineCnt, label);
                valid = FALSE;
                break;
           }
-          if(!isalnum((*label)[i])){
-               printf("error [line %d]: the label \"%s\" must include only alphabetical and numerical characters\n", lineCnt, *label);
+          if(!isalnum(label[i])){
+               printf("error [line %d]: the label \"%s\" must include only alphabetical and numerical characters\n", lineCnt, label);
                valid = FALSE;
           }
      }
-     if((*label)[strlen(*label)-1] == ':')
-          (*label)[strlen(*label)-1] = '\0';
+     if(label[strlen(label)-1] == ':')
+          label[strlen(label)-1] = '\0';
      return valid;
 }

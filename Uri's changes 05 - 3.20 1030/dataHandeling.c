@@ -14,19 +14,19 @@ boolean pushData(char *line, int *lInd, int lineCnt){
     int size = 1;
     boolean error = FALSE;
 
+    jumpSpaces(line, lInd);
     while(line[*lInd] != '\0'){
-        if(!isThereComma(line, lInd, lineCnt))
-            return FALSE;
         if(DC == 0) /* pushing the data to the data image */ 
-                *dataImage = calloc(1, sizeof(word));
-            else
-                *dataImage = realloc(*dataImage, DC * sizeof(word));
-            if(!isAlloc(*dataImage))
-                return ERROR;
-           
+            *dataImage = calloc(1, sizeof(word));
+        else
+            *dataImage = realloc(*dataImage, DC * sizeof(word));
+        if(!isAlloc(*dataImage))
+            return ERROR;
         if(!(dataImage[DC] = scanDataParams(line, lInd))) /* scanning data from the line */
             error = TRUE;
         DC++;
+        if(!isThereComma(line, lInd, lineCnt))
+            return FALSE;
         if(error == TRUE)
             continue;
     }

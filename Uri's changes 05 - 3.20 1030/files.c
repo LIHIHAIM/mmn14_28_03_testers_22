@@ -40,10 +40,12 @@ void buildOutputFiles(char *fileName){
      
      if(entryExist()){
           fd = openf((addSufix(fileName, ".ent", tempFileName)));
+          
           fclose(fd);
      }
      if(externalExist()){
           fd = openf((addSufix(fileName, ".ext", tempFileName)));
+
           fclose(fd);
      }
      return;

@@ -8,16 +8,14 @@
 #include "label.h"
 #include "privateSymTabFuncs.h"
 
-typedef struct
-{
-    char *symbol;
+/*typedef struct{
     int address;
-    char *attribute1;
-    char *attribute2;
-} symbolTable;
+    char *name;
+} extFileRow;*/
 
 static symbolTable *symTab;
 static int symSize;
+/*static extFileRow **externals;*/
 
 boolean pushExtern(char *line, int *lInd, int lineCnt)
 {
@@ -31,6 +29,58 @@ boolean pushExtern(char *line, int *lInd, int lineCnt)
         return FALSE;
     if (added == ERROR)
         return ERROR;
+    if(!isBlank(line, *lInd)){
+        printf("error [line %d]: extranous text after end of command\n", lineCnt);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+boolean pushEntry(char *line, int* lInd, int lineCnt){
+    char *operand, *operation;
+    boolean added;
+    int temp;
+    jumpSpaces(line, lInd);
+    temp = *lInd;
+    if (!(operation = readWord(line, lInd)))
+        return ERROR;
+    if(strcmp(operation, ".entry")){
+        jumpSpaces(line, lInd);
+        if (!(operand = readWord(line, lInd)))
+            return ERROR;
+        if(definedAs(operand, "external")){
+            printf("error [line %d]: operand cnnot be named \".extern\" and \".entry\" at the same time\n");
+            return FALSE;
+        }
+        if(!(added = addAttribToSymTab(operand, "entry")))
+            return FALSE;
+        if(added == ERROR)
+            return ERROR;
+        return TRUE;
+    }
+    else if(!strcmp(operation, ".string") && !strcmp(operation, ".data") && !strcmp(operation, ".extern")){
+        *lInd = strlen(line);
+        return TRUE;
+    }
+    *lInd = temp;
+    return TRUE;
+}
+
+boolean checkEntry(char *line, int *lInd, int lineCnt){
+    char *operand;
+    jumpSpaces(line, lInd);
+    if (!(operand = readWord(line, lInd)))
+        return ERROR;
+    if(strcmp(operand, "\0")){ /* could not get a label */
+        printf("error [line %d]: missing operand after directive \".entry\"\n", lineCnt);
+        return FALSE;
+    }
+    if(!isValidLabel(operand, lineCnt, FALSE))
+        return FALSE;
+    if(!isBlank(line, *lInd)){
+        printf("error [line %d]: extranous text after end of command\n", lineCnt);
+        return FALSE;
+    }
     return TRUE;
 }
 
@@ -60,7 +110,7 @@ boolean addToSymTab(char *name, char *attrib, int lineCnt)
     return TRUE;
 }
 
-boolean addAttribToSymTab(char *sym, char *attrib)
+static boolean addAttribToSymTab(char *sym, char *attrib)
 {
     int i;
     for (i = 0; i < symSize; i++)
@@ -77,6 +127,12 @@ boolean addAttribToSymTab(char *sym, char *attrib)
     return FALSE;
 }
 
+void encPlusIC(){
+    int i;
+    for(i = 0; i < OS_MEM; i++)
+        symTab[i].address += OS_MEM;
+}
+
 boolean wasDefined(char *sym, int lineCnt)
 {
     int i;
@@ -91,21 +147,6 @@ boolean wasDefined(char *sym, int lineCnt)
     return FALSE;
 }
 
-/* searching for a symbol name in the symbol table and returns the row of the symbol */
-symbolTable getFromSymTab(char *sym)
-{
-    int i = 0;
-    symbolTable error;
-    error.symbol = NULL;
-
-    while (i < symSize)
-    {
-        if (strcmp(symTab[i].symbol, sym))
-            return symTab[i];
-        i++;
-    }
-    return error;
-}
 /* is the symbol already in the symbol table */
 static boolean definedAs(char *sym, char *attrib)
 {
@@ -125,10 +166,20 @@ static boolean definedAs(char *sym, char *attrib)
     return FALSE;
 }
 
-void cleanSymTab()
+/* searching for a symbol name in the symbol table and returns the row of the symbol */
+symbolTable getFromSymTab(char *sym)
 {
-    free(symTab);
-    return;
+    int i = 0;
+    symbolTable error;
+    error.symbol = NULL;
+
+    while (i < symSize)
+    {
+        if (strcmp(symTab[i].symbol, sym))
+            return symTab[i];
+        i++;
+    }
+    return error;
 }
 
 boolean entryExist()
@@ -151,4 +202,10 @@ boolean externalExist()
             return TRUE;
     }
     return FALSE;
+}
+
+void cleanSymTab()
+{
+    free(symTab);
+    return;
 }

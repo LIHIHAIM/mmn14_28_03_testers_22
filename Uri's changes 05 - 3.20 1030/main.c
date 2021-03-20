@@ -18,5 +18,6 @@ int main(int argc, char *argv[]){
      }
      if(i == 1)
           printf("no file names has been inserted in the command line\n");
+     clean(TRUE);
      return 0;
 }
